@@ -1,7 +1,7 @@
 -- my keymaps
 vim.keymap.set('i', 'jk', '<Esc>', { desc="Back to normal mode from insert mode" });
 vim.keymap.set('i', 'kj', '<Esc>', { desc="Back to normal mode from insert mode" });
-vim.keymap.set({'n', 'x'}, 'B', '0', { desc="Move to beginning of line" });
+vim.keymap.set({'n', 'x'}, 'B', '0w', { desc="Move to beginning of line" });
 vim.keymap.set({'n', 'x'}, 'E', '$', { desc="Move to end of line" });
 
 -- move text up or down

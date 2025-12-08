@@ -137,10 +137,9 @@ require('lazy').setup({
     'lukas-reineke/indent-blankline.nvim',
     -- Enable `lukas-reineke/indent-blankline.nvim`
     -- See `:help indent_blankline.txt`
+    main="ibl",
     opts = {
-      char = '┊',
-      show_trailing_blankline_indent = false,
-    },
+    }
   },
 
   -- "gc" to comment visual regions/lines
@@ -171,6 +170,14 @@ require('lazy').setup({
       pcall(require('nvim-treesitter.install').update { with_sync = true })
     end,
   },
+  {
+    'windwp/nvim-autopairs',
+    event = "InsertEnter",
+    config = true
+    -- use opts = {} for passing setup options
+    -- this is equalent to setup({}) function
+  },
+
 
   'b0o/schemastore',
   'mfussenegger/nvim-lint',
@@ -251,7 +258,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
   group = highlight_group,
-  pattern = '*',
 })
 
 -- [[ Configure Telescope ]]
@@ -446,7 +452,7 @@ mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
 }
 
-mason_lspconfig.setup_handlers {
+--[[ mason_lspconfig.setup_handlers {
   function(server_name)
     require('lspconfig')[server_name].setup {
       capabilities = capabilities,
@@ -454,7 +460,53 @@ mason_lspconfig.setup_handlers {
       settings = servers[server_name],
     }
   end,
+} ]]
+
+local vue_language_server_path = vim.fn.expand '$MASON/packages' .. '/vue-language-server' .. '/node_modules/@vue/language-server'
+local vue_plugin = {
+  name = '@vue/typescript-plugin',
+  location = vue_language_server_path,
+  languages = { 'vue' },
+  configNamespace = 'typescript',
 }
+local vtsls_config = {
+  init_options = {
+    plugins = {
+      vue_plugin,
+    },
+  },
+  filetypes = { 'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue' },
+}
+local vue_ls_config = {
+  on_init = function(client)
+    client.handlers['tsserver/request'] = function(_, result, context)
+      local clients = vim.lsp.get_clients({ bufnr = context.bufnr, name = 'vtsls' })
+      if #clients == 0 then
+        vim.notify('Could not found `vtsls` lsp client, vue_lsp would not work without it.', vim.log.levels.ERROR)
+        return
+      end
+      local ts_client = clients[1]
+
+      local param = unpack(result)
+      local id, command, payload = unpack(param)
+      ts_client:exec_cmd({
+        command = 'typescript.tsserverRequest',
+        arguments = {
+          command,
+          payload,
+        },
+      }, { bufnr = context.bufnr }, function(_, r)
+          local response_data = { { id, r.body } }
+          ---@diagnostic disable-next-line: param-type-mismatch
+          client:notify('tsserver/response', response_data)
+        end)
+    end
+  end,
+}
+-- nvim 0.11 or above
+vim.lsp.config('vtsls', vtsls_config)
+vim.lsp.config('vue_ls', vue_ls_config)
+vim.lsp.enable({'vtsls', 'vue_ls'})
 
 require'lspconfig'.yamlls.setup {
   on_attach = on_attach,
@@ -586,3 +638,9 @@ vim.api.nvim_create_autocmd({'BufReadPost'}, {
 require('custom.plugins.tmoyses.keymaps')
 require('custom.plugins.tmoyses.sessions')
 require('custom.plugins.tmoyses.skeleton')
+
+vim.filetype.add({
+  extension = {
+    templ = "templ",
+  },
+})

@@ -14,3 +14,21 @@ vim.filetype.add {
     },
   },
 }
+
+vim.api.nvim_create_autocmd(
+  {
+    "BufNewFile",
+    "BufRead",
+  },
+  {
+    pattern = "*.yaml,*.yml",
+    callback = function()
+      local buf = vim.api.nvim_get_current_buf()
+      vim.api.nvim_buf_set_option(buf, "shiftwidth", 2)
+      vim.api.nvim_buf_set_option(buf, "softtabstop", 2)
+      vim.api.nvim_buf_set_option(buf, "expandtab", true)
+      vim.opt_local.indentkeys:remove('0#')
+      vim.opt_local.indentkeys:remove('<:>')
+    end
+  }
+)
